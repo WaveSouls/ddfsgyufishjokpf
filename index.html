@@ -1,0 +1,1075 @@
+<!DOCTYPE html><html lang="ru"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Control Center</title>
+<style>
+:root{
+  --bg:#090b10;--panel:#12151c;--line:#252a35;--text:#f3f4f6;--muted:#7e8593;
+  --red:#e11d2e;--green:#25c26e;--soft:#1a1f28
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+button,input{font:inherit}button{cursor:pointer}
+.hidden{display:none!important}
+
+/* AUTH */
+.authShell{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 0,#251236 0,transparent 35%),#090b10}
+.authCard{width:min(430px,100%);border:1px solid var(--line);background:#11141a;border-radius:20px;padding:28px;box-shadow:0 30px 90px #0008}
+.authCard h1{margin:0 0 6px}.muted{color:var(--muted)}
+.authTabs{display:flex;gap:8px;margin:22px 0 16px}
+.authTab{flex:1;padding:11px;border-radius:10px;border:1px solid var(--line);background:#171b22;color:#aeb5c0;font-weight:800}
+.authTab.active{background:#281019;color:#fff;border-color:#631b28}
+.field{margin:13px 0}.field label{display:block;font-size:12px;color:#9098a6;margin-bottom:6px}
+.input{width:100%;background:#0c0f14;border:1px solid #2c323d;color:#fff;padding:12px 13px;border-radius:10px;outline:none}
+.btn{border:0;background:#b91625;color:#fff;padding:12px 16px;border-radius:10px;font-weight:800}
+.btn.full{width:100%}.btn.secondary{background:#1a1f28;border:1px solid #303746;color:#d5d9e0}.btn.danger{background:#5d101a}
+.msg{margin-top:12px;padding:10px 12px;border-radius:10px;background:#251416;border:1px solid #4b2228;color:#efc4ca;font-size:13px}
+.msg.good{background:#102519;border-color:#234632;color:#c9f6d7}
+
+/* APP */
+.app{min-height:100vh;display:grid;grid-template-columns:265px 1fr;grid-template-rows:72px 1fr}
+.top{grid-column:1/3;display:flex;align-items:center;gap:18px;padding:0 20px;border-bottom:1px solid var(--line);background:#0b0d12;position:sticky;top:0;z-index:50}
+.menuBtn{font-size:25px;color:#aab0bc;background:none;border:0;padding:8px;border-radius:9px}.menuBtn:hover{background:#161a22}
+.logo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#7b4cff,#4f1cd8);display:grid;place-items:center;font-size:14px;font-weight:800}
+.brand{font-size:18px;font-weight:800}.topRight{margin-left:auto;display:flex;gap:10px;align-items:center}
+.pill,.iconBtn{padding:10px 14px;border:1px solid var(--line);border-radius:11px;color:#b8bfca;background:#11141a;font-weight:750;font-size:13px}
+.iconBtn{width:42px;padding:10px 0;font-size:18px}
+.sidebar{padding:16px 12px;border-right:1px solid var(--line);background:#0d1015;transition:.22s ease;overflow:hidden}
+.sidebar.collapsed{width:0;padding-left:0;padding-right:0;border-right:0}
+.nav{display:flex;align-items:center;gap:13px;padding:16px 14px;border-radius:12px;color:#a9afba;font-weight:700;margin-bottom:7px;white-space:nowrap;cursor:pointer}
+.nav:hover{background:#151922}.nav.active{background:#1a1f28;color:#fff;border:1px solid #272d39}.ico{width:24px;text-align:center;font-size:19px}
+.main{padding:26px 24px 34px;min-width:0}.head{display:flex;align-items:flex-start;gap:20px;margin-bottom:20px}.head h1{margin:0 0 7px;font-size:31px}.sub{color:var(--muted);font-size:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.card{position:relative;overflow:hidden;min-height:174px;padding:24px;border:1px solid #2a2f39;border-radius:18px;background:radial-gradient(circle at 5% 85%,#49131c33,transparent 42%),linear-gradient(180deg,#15181f,#12151b)}
+.card.wide{grid-column:1/3;min-height:230px}
+.statrow{display:flex;gap:18px;align-items:flex-start}.iconbox{width:68px;height:68px;border-radius:15px;background:linear-gradient(135deg,#b31523,#8d0d18);display:grid;place-items:center;font-size:29px;flex:0 0 auto}
+.kicker{font-size:15px;font-weight:900;text-transform:uppercase;line-height:1.35;margin-bottom:9px}.value{font-size:40px;color:var(--red);font-weight:900}.note{margin-top:11px;color:#707784;font-size:12px}
+.live{position:absolute;right:18px;top:16px;font-size:11px;color:#d8e6db;border:1px solid #234632;background:#102519;border-radius:999px;padding:5px 8px}
+.bottom{display:grid;grid-template-columns:1.25fr .75fr;gap:22px;align-items:end}.chartbox{margin-top:18px}canvas{width:100%;height:120px;display:block}
+.gaugeWrap{display:flex;justify-content:flex-end}.gauge{width:145px;height:145px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--red) 0deg,var(--red) calc(var(--p)*3.6deg),#262c35 calc(var(--p)*3.6deg),#262c35 360deg)}
+.gauge:after{content:"";position:absolute;inset:13px;background:#151920;border-radius:50%}.gtext{position:relative;z-index:1;text-align:center}.gsmall{font-size:11px;color:#878e9a;font-weight:700}.gnum{font-size:31px;font-weight:900}
+.empty{min-height:420px;border:1px solid var(--line);border-radius:18px;background:#11141a;display:grid;place-items:center;text-align:center;padding:30px}.emptyIcon{font-size:48px;margin-bottom:14px}.empty h2{margin:0 0 9px}.empty p{max-width:560px;color:var(--muted);margin:0 auto}
+.panel{border:1px solid var(--line);border-radius:18px;background:#11141a;padding:22px}.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.settings{position:fixed;right:18px;top:66px;width:330px;background:#12161d;border:1px solid #2a303b;border-radius:14px;padding:16px;z-index:80;box-shadow:0 18px 50px #0008}.settings h3{margin:0 0 14px}
+.adminTable{width:100%;border-collapse:collapse}.adminTable th,.adminTable td{border-bottom:1px solid #232832;padding:13px 10px;text-align:left}.adminTable th{color:#929aa8;font-size:12px}
+.status{font-size:12px;padding:5px 8px;border-radius:999px;background:#14281c;border:1px solid #234632;color:#bde7c8}.status.off{background:#251416;border-color:#472126;color:#e4b9bf}
+.buildGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.buildBtn{min-height:110px;border:1px solid #343a46;background:#151922;color:#fff;border-radius:15px;padding:16px;font-weight:900}.buildBtn:hover{border-color:#6f2430;background:#1c151b}
+
+/* DEVICES */
+.deviceList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.deviceCard{border:1px solid #2b313c;background:linear-gradient(180deg,#151922,#11141a);border-radius:16px;padding:18px;cursor:pointer;transition:.16s ease}
+.deviceCard:hover{transform:translateY(-2px);border-color:#4b5361;background:#171c24}
+.deviceTop{display:flex;align-items:center;gap:13px}
+.deviceIcon{
+  width:54px;height:54px;border-radius:13px;display:grid;place-items:center;
+  background:linear-gradient(180deg,#211118,#181219);border:1px solid #4b1e27;
+  position:relative;flex:0 0 auto
+}
+.deviceGlyph{width:30px;height:30px;position:relative}
+.deviceGlyph.pc:before{
+  content:"";position:absolute;left:3px;top:4px;width:24px;height:16px;border:2px solid #f2f3f5;border-radius:3px;
+  box-shadow:inset 0 0 0 1px #ffffff12
+}
+.deviceGlyph.pc:after{
+  content:"";position:absolute;left:9px;top:23px;width:13px;height:2px;background:#f2f3f5;border-radius:2px;
+  box-shadow:0 3px 0 2px #f2f3f5
+}
+.deviceGlyph.phone:before{
+  content:"";position:absolute;left:8px;top:1px;width:14px;height:27px;border:2px solid #f2f3f5;border-radius:5px
+}
+.deviceGlyph.phone:after{
+  content:"";position:absolute;left:13px;bottom:4px;width:4px;height:2px;background:#f2f3f5;border-radius:2px
+}
+.deviceGrow{min-width:0;flex:1}
+.deviceName{font-size:17px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deviceMeta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.deviceType{font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px;border:1px solid #343b46;background:#1a1f28;color:#c9ced6}
+.deviceStatus{font-size:11px;font-weight:900;padding:4px 8px;border-radius:999px;border:1px solid #234632;background:#102519;color:#bfe6ca}.deviceStatus.offline{background:#251416;border-color:#472126;color:#e4b9bf}
+.deviceBottom{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:16px;padding-top:14px;border-top:1px solid #222833;color:#9aa2af;font-size:13px}
+.deviceRight{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.deviceActionBtn{
+  border:1px solid #363e4a;background:#151a22;color:#e9edf2;border-radius:9px;padding:7px 10px;
+  font-size:11px;font-weight:900;letter-spacing:.2px;white-space:nowrap
+}
+.deviceActionBtn:hover{border-color:#5a6574;background:#1a2029}
+.deviceActionBtn.stream{border-color:#214732;background:#10251a;color:#c6efd3}
+.deviceActionBtn.stream:hover{background:#143020}
+.deviceActionBtn.disabled{opacity:.42;cursor:not-allowed}
+.deviceManageBtn{
+  width:100%;margin-top:12px;border:1px solid #343c48;background:#161b23;color:#f1f3f6;border-radius:10px;
+  padding:10px 12px;font-size:12px;font-weight:900
+}
+.deviceManageBtn:hover{border-color:#5d6776;background:#1b212b}
+.deviceCard.offline{opacity:.92}
+.deviceCard.offline .deviceStatus{background:#251416;border-color:#472126;color:#e4b9bf}
+.deviceCard.offline .ping{color:#737b87}
+
+.deviceCountry{display:flex;gap:8px;align-items:center;min-width:0}.flag{font-size:19px}.ip{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#c7ccd4}
+.ping{font-weight:900;white-space:nowrap}.ping.good{color:#60d394}.ping.mid{color:#e5c15a}.ping.high{color:#f2777a}
+.adminActions{display:flex;gap:7px;flex-wrap:wrap}.miniBtn{border:1px solid #343b46;background:#171c24;color:#e5e8ed;border-radius:9px;padding:8px 10px;font-size:12px;font-weight:850}.miniBtn:hover{border-color:#5d6572}.deviceCount{font-weight:900;color:#d7dce4}
+.modalShade{position:fixed;inset:0;background:#000a;display:grid;place-items:center;padding:20px;z-index:100}
+.deviceModal{width:min(560px,100%);background:#11151c;border:1px solid #2e3540;border-radius:18px;box-shadow:0 30px 100px #000c;overflow:hidden}
+.modalHead{display:flex;align-items:center;gap:14px;padding:20px;border-bottom:1px solid #242a33}.modalHead h2{margin:0;font-size:21px}.modalClose{margin-left:auto;width:38px;height:38px;border-radius:10px;border:1px solid #303743;background:#171c24;color:#d4d8df;font-size:20px}
+.modalBody{padding:20px}.detailGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.detail{border:1px solid #252b35;background:#0e1116;border-radius:12px;padding:13px}.detailLabel{font-size:11px;color:#7f8794;margin-bottom:6px;text-transform:uppercase;font-weight:800}.detailValue{font-size:15px;font-weight:800;word-break:break-word}
+.safeNote{margin-top:16px;color:#6f7784;font-size:11px}
+.manageModal{width:min(760px,100%);background:#11151c;border:1px solid #2e3540;border-radius:18px;box-shadow:0 30px 100px #000c;overflow:hidden}
+.commandGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:20px}
+.commandBtn{display:flex;align-items:center;gap:11px;text-align:left;border:1px solid #2d3440;background:#151a22;color:#eef1f5;border-radius:12px;padding:13px 14px;font-weight:800}
+.commandBtn:hover{border-color:#515b6a;background:#1a2029}
+.commandIcon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:#211118;border:1px solid #4b1e27;flex:0 0 auto}
+.manageNotice{margin:0 20px 20px;padding:12px 13px;border:1px solid #2a303a;background:#0e1116;border-radius:10px;color:#9da5b1;font-size:12px}
+@media(max-width:650px){.commandGrid{grid-template-columns:1fr}}
+@media(max-width:900px){
+  .app{grid-template-columns:1fr}.top{grid-column:1}.sidebar{position:fixed;left:0;top:72px;bottom:0;width:265px;z-index:60;box-shadow:15px 0 40px #0009}
+  .sidebar.collapsed{transform:translateX(-100%);width:265px;padding:16px 12px;border-right:1px solid var(--line)}
+  .grid{grid-template-columns:1fr}.card.wide{grid-column:1}.bottom{grid-template-columns:1fr}.gaugeWrap{justify-content:flex-start}.buildGrid{grid-template-columns:1fr}.deviceList{grid-template-columns:1fr}.detailGrid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<section class="authShell" id="authScreen">
+  <div class="authCard">
+    <h1>Control Center</h1>
+    <div class="muted">Авторизация пользователя</div>
+
+    <div class="authTabs">
+      <button type="button" class="authTab active" id="loginTab">Авторизация</button>
+      <button type="button" class="authTab" id="registerTab">Регистрация</button>
+    </div>
+
+    <div id="loginBox">
+      <div class="field"><label>Логин</label><input class="input" id="loginUsername" autocomplete="username"></div>
+      <div class="field"><label>Пароль</label><input class="input" id="loginPassword" type="password" autocomplete="current-password"></div>
+      <button type="button" class="btn full" id="loginBtn">Войти</button>
+    </div>
+
+    <div id="registerBox" class="hidden">
+      <div class="field"><label>Логин</label><input class="input" id="regUsername" maxlength="24"></div>
+      <div class="field"><label>Ник</label><input class="input" id="regDisplayName" maxlength="32"></div>
+      <div class="field"><label>Пароль</label><input class="input" id="regPassword" type="password" maxlength="64"></div>
+      <button type="button" class="btn full" id="registerBtn">Зарегистрироваться</button>
+    </div>
+
+    <div id="authMsg" class="msg hidden"></div>
+  </div>
+</section>
+
+<div class="app hidden" id="app">
+  <header class="top">
+    <button class="menuBtn" id="menuBtn">☰</button>
+    <div class="logo">▶</div><div class="brand">CONTROL CENTER</div>
+    <div class="topRight">
+      <button class="pill" id="langBtn">🌐 RU</button>
+      <div class="pill">◯ <span id="topNick"></span></div>
+      <button class="iconBtn" id="settingsBtn">⚙</button>
+    </div>
+  </header>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="nav active" data-page="overview"><span class="ico">▦</span><span data-ru="Обзор" data-en="Overview">Обзор</span></div>
+    <div class="nav" data-page="devices"><span class="ico">▣</span><span data-ru="Устройства" data-en="Devices">Устройства</span></div>
+    <div class="nav" data-page="files"><span class="ico">▤</span><span data-ru="Файлы" data-en="Files">Файлы</span></div>
+    <div class="nav" data-page="activity"><span class="ico">◷</span><span data-ru="Активность" data-en="Activity">Активность</span></div>
+    <div class="nav" data-page="platform"><span class="ico">⌘</span>Android / PC</div>
+    <div class="nav hidden" id="adminNav" data-page="admin"><span class="ico">♛</span><span data-ru="Админ-панель" data-en="Admin panel">Админ-панель</span></div>
+  </aside>
+
+  <main class="main">
+    <section id="page-overview">
+      <div class="head"><div><h1>Control Center</h1><div class="sub">Панель мониторинга проекта</div></div></div>
+      <div class="grid">
+        <article class="card"><span class="live">● LIVE</span><div class="statrow"><div class="iconbox">♙</div><div><div class="kicker">Количество активных воркеров</div><div class="value" id="workers">10</div><div class="note">Активные процессы прямо сейчас</div></div></div></article>
+        <article class="card"><span class="live">● LIVE</span><div class="statrow"><div class="iconbox">♙</div><div><div class="kicker">Количество активных пользователей</div><div class="value" id="buyers">94</div><div class="note">Пользователи с активным доступом</div></div></div></article>
+        <article class="card"><span class="live">● LIVE</span><div class="statrow"><div class="iconbox">🛒</div><div><div class="kicker">Общее количество пользователей</div><div class="value" id="total">600</div><div class="note">За всё время работы проекта</div></div></div></article>
+        <article class="card"><span class="live">● LIVE</span><div class="statrow"><div class="iconbox">▱</div><div><div class="kicker">Количество событий за всё время</div><div class="value" id="logs">28 241</div><div class="note">Общее число обработанных записей</div></div></div></article>
+        <article class="card wide"><span class="live">● LIVE</span><div class="bottom"><div><div class="statrow"><div class="iconbox">♢</div><div><div class="kicker">Количество пользователей онлайн</div><div class="value" id="online">147</div><div class="note">Текущая активность системы</div></div></div><div class="chartbox"><canvas id="chart"></canvas></div></div><div class="gaugeWrap"><div class="gauge" id="gauge" style="--p:45"><div class="gtext"><div class="gsmall">Нагрузка на проект</div><div class="gnum" id="load">45%</div></div></div></div></div></article>
+      </div>
+    </section>
+
+    <section id="page-devices" class="hidden"></section>
+    <section id="page-files" class="hidden"></section>
+    <section id="page-activity" class="hidden"></section>
+
+    <section id="page-platform" class="hidden">
+      <div class="head"><div><h1>Android / PC</h1><div class="sub">Инструменты платформы</div></div></div>
+      <div class="panel">
+        <div id="platformSubscriptionMsg" class="msg hidden"></div>
+        <div class="buildGrid">
+          <button class="buildBtn" data-build="desktop">BUILD PC APP</button>
+          <button class="buildBtn" data-build="android">BUILD ANDROID APP</button>
+          <button class="buildBtn" data-build="package">PACKAGE PC APP</button>
+        </div>
+        <div id="buildMsg" class="msg hidden"></div>
+      </div>
+    </section>
+
+    <section id="page-admin" class="hidden">
+      <div class="head"><div><h1>Админ-панель</h1><div class="sub">Управление подписками зарегистрированных пользователей</div></div></div>
+      <div class="panel">
+        <table class="adminTable">
+          <thead><tr><th>Пользователь</th><th>Ник</th><th>Подписка</th><th>Устройства</th><th>Действия</th></tr></thead>
+          <tbody id="adminUsers"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="settings hidden" id="settings">
+  <h3>Настройки</h3>
+  <div class="field"><label>Ник</label><input class="input" id="displayNameInput" maxlength="32"></div>
+  <div class="row">
+    <button class="btn" id="saveProfile">Сохранить</button>
+    <button class="btn secondary" id="logoutBtn">Выйти</button>
+  </div>
+  <div id="settingsMsg" class="msg good hidden"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  function $(id){ return document.getElementById(id); }
+  function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+  function rand(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+  function fmt(n){ return Math.round(n).toLocaleString('ru-RU'); }
+
+  var mem = {};
+  var store = {
+    get:function(k){
+      try{
+        var v=window.localStorage.getItem(k);
+        if(v!==null) return v;
+      }catch(e){}
+      return Object.prototype.hasOwnProperty.call(mem,k)?mem[k]:null;
+    },
+    set:function(k,v){
+      v=String(v);
+      mem[k]=v;
+      try{ window.localStorage.setItem(k,v); }catch(e){}
+    },
+    remove:function(k){
+      delete mem[k];
+      try{ window.localStorage.removeItem(k); }catch(e){}
+    }
+  };
+
+  var USERS_KEY='cc_users_v4';
+  var SESSION_KEY='cc_session_v4';
+  var METRICS_KEY='cc_metrics_v4';
+  var LANG_KEY='cc_lang_v4';
+  var DEVICES_KEY='cc_devices_v7';
+
+  var users=[];
+  var devices=[];
+  var activeModalDeviceId=null;
+  var me=null;
+  var lang=store.get(LANG_KEY)||'ru';
+
+  var metrics={
+    workers:10,buyers:94,total:600,logs:28241,online:147,load:45,
+    points:Array.from({length:90},function(){return rand(25,48)}),
+    lastDaily:new Date().toISOString().slice(0,10),
+    lastWorker:0,lastBuyer:0
+  };
+
+  try{
+    var savedMetrics=JSON.parse(store.get(METRICS_KEY)||'null');
+    if(savedMetrics && typeof savedMetrics==='object') metrics=Object.assign(metrics,savedMetrics);
+  }catch(e){}
+
+  function hash(text){
+    text=String(text);
+    var h1=0xdeadbeef^text.length, h2=0x41c6ce57^text.length;
+    for(var i=0;i<text.length;i++){
+      var ch=text.charCodeAt(i);
+      h1=Math.imul(h1^ch,2654435761);
+      h2=Math.imul(h2^ch,1597334677);
+    }
+    h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909);
+    h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+    return (h2>>>0).toString(16)+(h1>>>0).toString(16);
+  }
+
+  function loadUsers(){
+    try{
+      var parsed=JSON.parse(store.get(USERS_KEY)||'[]');
+      users=Array.isArray(parsed)?parsed:[];
+    }catch(e){ users=[]; }
+
+    users=users.filter(function(u){return u && typeof u.username==='string';});
+
+    var admin=null;
+    for(var i=0;i<users.length;i++){
+      if(users[i].username.toLowerCase()==='hacked by @NightWave_Coder'){ admin=users[i]; break; }
+    }
+
+    if(!admin){
+      admin={
+        id:1,
+        username:'hacked by @NightWave_Coder',
+        displayName:'hacked by @NightWave_Coder',
+        passwordHash:hash('hacked by @NightWave_Coder'),
+        role:'admin',
+        subscriptionActive:true,
+        createdAt:new Date().toISOString()
+      };
+      users.unshift(admin);
+    }else{
+      admin.username='hacked by @NightWave_Coder';
+      admin.passwordHash=hash('hacked by @NightWave_Coder');
+      admin.role='admin';
+      admin.subscriptionActive=true;
+      if(!admin.displayName) admin.displayName='hacked by @NightWave_Coder';
+    }
+    saveUsers();
+  }
+
+  function saveUsers(){ store.set(USERS_KEY,JSON.stringify(users)); }
+
+  function loadDevices(){
+    try{
+      var parsed=JSON.parse(store.get(DEVICES_KEY)||'[]');
+      devices=Array.isArray(parsed)?parsed:[];
+    }catch(e){devices=[];}
+    devices=devices.filter(function(d){return d && d.id && d.ownerId && (d.type==='pc'||d.type==='android');});
+    for(var i=0;i<devices.length;i++){
+      if(typeof devices[i].online!=='boolean') devices[i].online=true;
+      if(!Number.isFinite(Number(devices[i].ping))) devices[i].ping=rand(65,145);
+    }
+  }
+
+  function saveDevices(){ store.set(DEVICES_KEY,JSON.stringify(devices)); }
+
+  function randomToken(len){
+    var chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var out='';
+    for(var i=0;i<len;i++) out+=chars.charAt(rand(0,chars.length-1));
+    return out;
+  }
+
+  function randomCountry(){
+    var r=Math.random();
+    if(r<0.45){
+      return {
+        code:'UA',name:'Украина',flag:'🇺🇦',
+        fixed:['192.0.2.34','198.51.100.87','203.0.113.146']
+      };
+    }
+    if(r<0.90){
+      return {
+        code:'RU',name:'Россия',flag:'🇷🇺',
+        fixed:['198.51.100.21','203.0.113.72','192.0.2.188']
+      };
+    }
+    return {
+      code:'BY',name:'Беларусь',flag:'🇧🇾',
+      fixed:['203.0.113.19','192.0.2.103','198.51.100.204']
+    };
+  }
+
+  function randomTestIp(country){
+    // Only RFC 5737 documentation ranges are used.
+    if(Math.random()<0.58){
+      return country.fixed[rand(0,country.fixed.length-1)];
+    }
+    var nets=['192.0.2','198.51.100','203.0.113'];
+    return nets[rand(0,nets.length-1)]+'.'+rand(2,254);
+  }
+
+  function randomPcName(){
+    if(Math.random()<0.90) return 'desktop-'+randomToken(7).toLowerCase();
+    var rare=[
+      'OFFICE-PC-'+randomToken(3),
+      'HOME-PC-'+randomToken(3),
+      'WORKSTATION-'+randomToken(3),
+      'WIN-'+randomToken(6),
+      'GAMING-PC-'+randomToken(3)
+    ];
+    return rare[rand(0,rare.length-1)];
+  }
+
+  function randomAndroidName(){
+    var models=[
+      'SM-A546B','SM-S918B','Redmi Note 12','Redmi Note 13 Pro',
+      'POCO X5 Pro','POCO F5','Pixel 7','Pixel 8','OnePlus 11',
+      'realme 11 Pro','HONOR 90','Xiaomi 13T'
+    ];
+    if(Math.random()<0.72) return models[rand(0,models.length-1)];
+    return 'android-'+randomToken(6).toLowerCase();
+  }
+
+  function createDevice(ownerId,type,isOnline){
+    var c=randomCountry();
+    var d={
+      id:Date.now()+rand(100,999999),
+      ownerId:Number(ownerId),
+      type:type,
+      name:type==='pc'?randomPcName():randomAndroidName(),
+      countryCode:c.code,
+      countryName:c.name,
+      flag:c.flag,
+      ip:randomTestIp(c),
+      ping:rand(65,145),
+      online:isOnline!==false,
+      os:type==='pc'?(Math.random()<0.68?'Windows 11':'Windows 10'):('Android '+rand(11,15))
+    };
+    devices.push(d);
+    saveDevices();
+    return d;
+  }
+
+  function pingClass(p){
+    return p<110?'good':p<180?'mid':'high';
+  }
+
+  function ownedDevices(userId){
+    return devices.filter(function(d){return Number(d.ownerId)===Number(userId);});
+  }
+
+  function showAuthMessage(text,good){
+    var box=$('authMsg');
+    box.textContent=text;
+    box.classList.remove('hidden');
+    box.classList.toggle('good',!!good);
+  }
+
+  function switchAuth(mode){
+    var login=mode==='login';
+    $('loginBox').classList.toggle('hidden',!login);
+    $('registerBox').classList.toggle('hidden',login);
+    $('loginTab').classList.toggle('active',login);
+    $('registerTab').classList.toggle('active',!login);
+    $('authMsg').classList.add('hidden');
+  }
+
+  function login(){
+    try{
+      var username=$('loginUsername').value.trim();
+      var password=$('loginPassword').value;
+      if(!username || !password){ showAuthMessage('Введите логин и пароль'); return; }
+
+      var wanted=hash(password);
+      var found=null;
+      for(var i=0;i<users.length;i++){
+        if(users[i].username.toLowerCase()===username.toLowerCase() && users[i].passwordHash===wanted){
+          found=users[i];break;
+        }
+      }
+      if(!found){ showAuthMessage('Неверный логин или пароль'); return; }
+
+      me=found;
+      store.set(SESSION_KEY,String(me.id));
+      $('loginPassword').value='';
+      openApp();
+    }catch(e){
+      console.error(e);
+      showAuthMessage('Ошибка входа: '+(e.message||'неизвестная ошибка'));
+    }
+  }
+
+  function register(){
+    try{
+      var username=$('regUsername').value.trim();
+      var displayName=$('regDisplayName').value.trim();
+      var password=$('regPassword').value;
+
+      if(!/^[A-Za-z0-9_.-]{3,24}$/.test(username)){ showAuthMessage('Логин: 3–24 символа, буквы/цифры/._-'); return; }
+      if(username.toLowerCase()==='karlos'){ showAuthMessage('Этот логин недоступен'); return; }
+      if(!displayName){ showAuthMessage('Введите ник'); return; }
+      if(password.length<6){ showAuthMessage('Пароль должен быть минимум 6 символов'); return; }
+
+      for(var i=0;i<users.length;i++){
+        if(users[i].username.toLowerCase()===username.toLowerCase()){
+          showAuthMessage('Такой пользователь уже существует'); return;
+        }
+      }
+
+      var u={
+        id:Date.now()+rand(10,9999),
+        username:username,
+        displayName:displayName,
+        passwordHash:hash(password),
+        role:'user',
+        subscriptionActive:false,
+        createdAt:new Date().toISOString()
+      };
+
+      users.push(u);
+      saveUsers();
+      me=u;
+      store.set(SESSION_KEY,String(me.id));
+      $('regPassword').value='';
+      openApp();
+    }catch(e){
+      console.error(e);
+      showAuthMessage('Ошибка регистрации: '+(e.message||'неизвестная ошибка'));
+    }
+  }
+
+  function currentSessionUser(){
+    var raw=store.get(SESSION_KEY);
+    if(!raw) return null;
+    var id=Number(raw);
+    for(var i=0;i<users.length;i++) if(Number(users[i].id)===id) return users[i];
+    return null;
+  }
+
+  function openApp(){
+    $('authScreen').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    $('topNick').textContent=me.displayName;
+    $('displayNameInput').value=me.displayName;
+    $('adminNav').classList.toggle('hidden',me.role!=='admin');
+    $('langBtn').textContent='🌐 '+lang.toUpperCase();
+    applyLanguage();
+    showPage('overview');
+    renderMetrics();
+  }
+
+  function logout(){
+    me=null;
+    store.remove(SESSION_KEY);
+    $('app').classList.add('hidden');
+    $('settings').classList.add('hidden');
+    $('authScreen').classList.remove('hidden');
+    $('loginUsername').value='';
+    $('loginPassword').value='';
+    switchAuth('login');
+  }
+
+  function subscriptionGate(title,icon){
+    return '<div class="head"><div><h1>'+title+'</h1></div></div>'+
+      '<div class="empty"><div><div class="emptyIcon">'+icon+'</div><h2>У вас нет подписки</h2><p>Для доступа к этому разделу нужна активная подписка.</p></div></div>';
+  }
+
+  function emptyData(title,icon,text){
+    return '<div class="head"><div><h1>'+title+'</h1></div></div>'+
+      '<div class="empty"><div><div class="emptyIcon">'+icon+'</div><h2>'+text+'</h2></div></div>';
+  }
+
+  function showPage(page){
+    var sections=document.querySelectorAll('main > section');
+    for(var i=0;i<sections.length;i++) sections[i].classList.add('hidden');
+
+    var navs=document.querySelectorAll('.nav');
+    for(var j=0;j<navs.length;j++) navs[j].classList.toggle('active',navs[j].getAttribute('data-page')===page);
+
+    if(page==='admin' && me.role!=='admin') page='overview';
+
+    if(page==='devices'){
+      if(!me.subscriptionActive) $('page-devices').innerHTML=subscriptionGate('Устройства','▣');
+      else renderDevices();
+    }
+
+    if(page==='files' || page==='activity'){
+      var title=page==='files'?'Файлы':'Активность';
+      var icon=page==='files'?'▤':'◷';
+      var empty=page==='files'?'Файлов пока нет':'Активности пока нет';
+      $('page-'+page).innerHTML=me.subscriptionActive?emptyData(title,icon,empty):subscriptionGate(title,icon);
+    }
+
+    if(page==='platform') renderPlatform();
+    if(page==='admin') renderAdmin();
+
+    $('page-'+page).classList.remove('hidden');
+  }
+
+  function deviceGlyphHtml(type){
+    return '<div class="deviceGlyph '+(type==='pc'?'pc':'phone')+'"></div>';
+  }
+
+  function renderDevices(){
+    var list=ownedDevices(me.id);
+    var section=$('page-devices');
+
+    if(!list.length){
+      section.innerHTML=emptyData('Устройства','▣','У вас пока нет устройств');
+      return;
+    }
+
+    var cards=list.map(function(d){
+      var typeName=d.type==='pc'?'PC':'ANDROID';
+      var online=d.online!==false;
+      var statusText=online?'● ONLINE':'● OFFLINE';
+      var streamButton=online
+        ? '<button class="deviceActionBtn stream" data-stream-device="'+d.id+'">ПОСМОТРЕТЬ СТРИМ</button>'
+        : '<button class="deviceActionBtn disabled" disabled>СТРИМ НЕДОСТУПЕН</button>';
+
+      return '<div class="deviceCard '+(online?'':'offline')+'" data-device-id="'+d.id+'">'+
+        '<div class="deviceTop">'+
+          '<div class="deviceIcon">'+deviceGlyphHtml(d.type)+'</div>'+
+          '<div class="deviceGrow">'+
+            '<div class="deviceName">'+escapeHtml(d.name)+'</div>'+
+            '<div class="deviceMeta"><span class="deviceType">'+typeName+'</span><span class="deviceStatus '+(online?'':'offline')+'">'+statusText+'</span></div>'+
+          '</div>'+
+          '<div class="deviceRight">'+
+            streamButton+
+            '<div class="ping '+(online?pingClass(d.ping):'')+'" data-device-ping="'+d.id+'">'+(online?(d.ping+' ms'):'—')+'</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="deviceBottom">'+
+          '<div class="deviceCountry"><span class="flag">'+d.flag+'</span><span>'+escapeHtml(d.countryName)+'</span></div>'+
+          '<div class="ip">'+escapeHtml(d.ip)+'</div>'+
+        '</div>'+
+        '<button class="deviceManageBtn" data-manage-device="'+d.id+'">УПРАВЛЕНИЕ УСТРОЙСТВОМ</button>'+
+      '</div>';
+    }).join('');
+
+    section.innerHTML='<div class="head"><div><h1>Устройства</h1><div class="sub">Подключённые устройства аккаунта</div></div></div>'+
+      '<div class="deviceList">'+cards+'</div>';
+
+    var els=section.querySelectorAll('[data-device-id]');
+    for(var i=0;i<els.length;i++){
+      els[i].onclick=function(e){
+        if(e.target.closest('button')) return;
+        openDeviceModal(Number(this.getAttribute('data-device-id')));
+      };
+    }
+
+    var streamBtns=section.querySelectorAll('[data-stream-device]');
+    for(var s=0;s<streamBtns.length;s++){
+      streamBtns[s].onclick=function(e){
+        e.stopPropagation();
+        var dId=Number(this.getAttribute('data-stream-device'));
+        showDeviceActionMessage(dId,'stream');
+      };
+    }
+
+    var manageBtns=section.querySelectorAll('[data-manage-device]');
+    for(var m=0;m<manageBtns.length;m++){
+      manageBtns[m].onclick=function(e){
+        e.stopPropagation();
+        var dId=Number(this.getAttribute('data-manage-device'));
+        showDeviceActionMessage(dId,'manage');
+      };
+    }
+  }
+
+  function showDeviceActionMessage(id,action){
+    var d=null;
+    for(var i=0;i<devices.length;i++) if(Number(devices[i].id)===Number(id)){d=devices[i];break;}
+    if(!d) return;
+
+    if(action==='stream'){
+      if(d.online===false){ alert('Устройство офлайн. Стрим недоступен.'); return; }
+      alert('Просмотр стрима не подключён в HTML-версии.');
+      return;
+    }
+
+    openManageModal(d);
+  }
+
+  function openManageModal(d){
+    $('manageDeviceName').textContent=d.name;
+    $('manageDeviceType').textContent=(d.type==='pc'?'PC / Desktop':'Android / Phone')+(d.online===false?' • OFFLINE':' • ONLINE');
+    $('manageDeviceGlyph').className='deviceGlyph '+(d.type==='pc'?'pc':'phone');
+
+    var pcCommands=[
+      ['🛡','Антивирус / статус защиты'],
+      ['🖥','Скриншот'],
+      ['👁','Процессы — только просмотр'],
+      ['📄','Информация о процессах'],
+      ['💻','Данные ПК'],
+      ['📂','Содержание директории — только просмотр'],
+      ['📁','Информация о файлах'],
+      ['🌐','Состояние сети'],
+      ['📊','Использование CPU / RAM'],
+      ['💾','Использование диска']
+    ];
+
+    var androidCommands=[
+      ['🛡','Статус защиты'],
+      ['📱','Данные устройства'],
+      ['🔋','Батарея'],
+      ['📶','Состояние сети'],
+      ['💾','Хранилище'],
+      ['📦','Список приложений — только просмотр'],
+      ['🖥','Скриншот'],
+      ['📊','Использование памяти'],
+      ['🧾','Системная информация'],
+      ['🌐','IP / соединение']
+    ];
+
+    var commands=d.type==='pc'?pcCommands:androidCommands;
+    var grid=$('manageCommandGrid');
+    grid.innerHTML=commands.map(function(c){
+      return '<button class="commandBtn" data-safe-command="'+escapeHtml(c[1])+'">'+
+        '<span class="commandIcon">'+c[0]+'</span><span>'+escapeHtml(c[1])+'</span></button>';
+    }).join('');
+
+    var buttons=grid.querySelectorAll('[data-safe-command]');
+    for(var i=0;i<buttons.length;i++){
+      buttons[i].onclick=function(){
+        $('manageNotice').textContent=
+          'Команда «'+this.getAttribute('data-safe-command')+'» пока является интерфейсной заглушкой в HTML-версии.';
+      };
+    }
+
+    $('manageNotice').textContent='HTML-версия: эти элементы являются интерфейсными заглушками и не выполняют удалённые команды.';
+    $('manageModalShade').classList.remove('hidden');
+  }
+
+  function closeManageModal(){
+    $('manageModalShade').classList.add('hidden');
+  }
+
+  function openDeviceModal(id){
+    var d=null;
+    for(var i=0;i<devices.length;i++) if(Number(devices[i].id)===Number(id)){d=devices[i];break;}
+    if(!d) return;
+
+    activeModalDeviceId=d.id;
+    $('modalDeviceGlyph').className='deviceGlyph '+(d.type==='pc'?'pc':'phone');
+    $('modalDeviceName').textContent=d.name;
+    $('modalDeviceType').textContent=d.type==='pc'?'PC / Desktop':'Android / Phone';
+    $('modalCountry').textContent=d.flag+' '+d.countryName;
+    $('modalIp').textContent=d.ip;
+    $('modalPing').textContent=d.online===false?'—':(d.ping+' ms');
+    $('modalPing').className='detailValue ping '+(d.online===false?'':pingClass(d.ping));
+    $('modalOs').textContent=d.os;
+    $('modalStatus').textContent=d.online===false?'● OFFLINE':'● ONLINE';
+    $('modalStatus').style.color=d.online===false?'#e4b9bf':'#bfe6ca';
+    $('deviceModalShade').classList.remove('hidden');
+  }
+
+  function closeDeviceModal(){
+    activeModalDeviceId=null;
+    $('deviceModalShade').classList.add('hidden');
+  }
+
+  function updateDevicePings(){
+    if(!devices.length) return;
+
+    for(var i=0;i<devices.length;i++){
+      var d=devices[i];
+      if(d.online===false) continue;
+
+      // Small drift most of the time, occasional modest variation.
+      var move=rand(-4,4);
+      if(Math.random()<0.08) move+=rand(-8,8);
+      d.ping=clamp(d.ping+move,50,250);
+
+      var el=document.querySelector('[data-device-ping="'+d.id+'"]');
+      if(el){
+        el.textContent=d.ping+' ms';
+        el.className='ping '+pingClass(d.ping);
+      }
+
+      if(Number(activeModalDeviceId)===Number(d.id)){
+        $('modalPing').textContent=d.ping+' ms';
+        $('modalPing').className='detailValue ping '+pingClass(d.ping);
+      }
+    }
+  }
+
+  function renderPlatform(){
+    var m=$('platformSubscriptionMsg');
+    if(!me.subscriptionActive){
+      m.textContent='У вас нет подписки';
+      m.classList.remove('hidden');
+    }else{
+      m.classList.add('hidden');
+    }
+    $('buildMsg').classList.add('hidden');
+  }
+
+  function renderAdmin(){
+    if(me.role!=='admin') return;
+    var body=$('adminUsers');
+    body.innerHTML='';
+
+    users.forEach(function(u){
+      var tr=document.createElement('tr');
+      var count=ownedDevices(u.id).length;
+
+      var subAction=u.role==='admin'
+        ? '<span class="status">ADMIN</span>'
+        : '<button class="btn '+(u.subscriptionActive?'danger':'')+'" data-sub-user="'+u.id+'">'+(u.subscriptionActive?'Забрать подписку':'Выдать подписку')+'</button>';
+
+      var deviceActions=
+        '<div class="adminActions">'+
+          '<button class="miniBtn" data-add-pc="'+u.id+'">+ PC ONLINE</button>'+
+          '<button class="miniBtn" data-add-android="'+u.id+'">+ ANDROID ONLINE</button>'+
+          '<button class="miniBtn" data-add-pc-offline="'+u.id+'">+ PC OFFLINE</button>'+
+          '<button class="miniBtn" data-add-android-offline="'+u.id+'">+ ANDROID OFFLINE</button>'+
+        '</div>';
+
+      tr.innerHTML=
+        '<td>'+escapeHtml(u.username)+'</td>'+
+        '<td>'+escapeHtml(u.displayName)+'</td>'+
+        '<td><span class="status '+(u.subscriptionActive?'':'off')+'">'+(u.subscriptionActive?'ACTIVE':'NO SUBSCRIPTION')+'</span></td>'+
+        '<td><span class="deviceCount">'+count+'</span><div class="adminActions" style="margin-top:7px">'+deviceActions+'</div></td>'+
+        '<td>'+subAction+'</td>';
+
+      body.appendChild(tr);
+    });
+
+    var subButtons=body.querySelectorAll('[data-sub-user]');
+    for(var i=0;i<subButtons.length;i++){
+      subButtons[i].onclick=function(){
+        var id=Number(this.getAttribute('data-sub-user'));
+        for(var j=0;j<users.length;j++){
+          if(Number(users[j].id)===id && users[j].role!=='admin'){
+            users[j].subscriptionActive=!users[j].subscriptionActive;
+            saveUsers();
+            if(Number(me.id)===id) me=users[j];
+            renderAdmin();
+            break;
+          }
+        }
+      };
+    }
+
+    var pcButtons=body.querySelectorAll('[data-add-pc]');
+    for(var p=0;p<pcButtons.length;p++){
+      pcButtons[p].onclick=function(){
+        createDevice(Number(this.getAttribute('data-add-pc')),'pc',true);
+        renderAdmin();
+      };
+    }
+
+    var androidButtons=body.querySelectorAll('[data-add-android]');
+    for(var a=0;a<androidButtons.length;a++){
+      androidButtons[a].onclick=function(){
+        createDevice(Number(this.getAttribute('data-add-android')),'android',true);
+        renderAdmin();
+      };
+    }
+
+    var pcOfflineButtons=body.querySelectorAll('[data-add-pc-offline]');
+    for(var po=0;po<pcOfflineButtons.length;po++){
+      pcOfflineButtons[po].onclick=function(){
+        createDevice(Number(this.getAttribute('data-add-pc-offline')),'pc',false);
+        renderAdmin();
+      };
+    }
+
+    var androidOfflineButtons=body.querySelectorAll('[data-add-android-offline]');
+    for(var ao=0;ao<androidOfflineButtons.length;ao++){
+      androidOfflineButtons[ao].onclick=function(){
+        createDevice(Number(this.getAttribute('data-add-android-offline')),'android',false);
+        renderAdmin();
+      };
+    }
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g,function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c];
+    });
+  }
+
+  function applyLanguage(){
+    var els=document.querySelectorAll('[data-ru][data-en]');
+    for(var i=0;i<els.length;i++) els[i].textContent=lang==='ru'?els[i].getAttribute('data-ru'):els[i].getAttribute('data-en');
+  }
+
+  function renderMetrics(){
+    if(!me) return;
+    $('workers').textContent=fmt(metrics.workers);
+    $('buyers').textContent=fmt(metrics.buyers);
+    $('total').textContent=fmt(metrics.total);
+    $('logs').textContent=fmt(metrics.logs);
+    $('online').textContent=fmt(metrics.online);
+    $('load').textContent=metrics.load+'%';
+    $('gauge').style.setProperty('--p',metrics.load);
+    drawChart();
+  }
+
+  function updateMetrics(){
+    var now=Date.now();
+    var d=new Date();
+    var day=d.toISOString().slice(0,10);
+
+    if(day!==metrics.lastDaily){ metrics.total+=1; metrics.lastDaily=day; }
+
+    if(now-metrics.lastWorker>150000){
+      var r=Math.random();
+      var target=r<0.62?rand(10,20):r<0.91?rand(18,30):rand(30,40);
+      metrics.workers=clamp(metrics.workers+Math.sign(target-metrics.workers||1)*rand(1,4),10,40);
+      metrics.lastWorker=now;
+    }
+
+    if(now-metrics.lastBuyer>60000){
+      var h=(d.getUTCHours()+3)%24;
+      var targetUsers=h<6?60:h<10?90:h<14?125:h<17?165:h<19?200:h<22?145:85;
+      metrics.buyers=clamp(metrics.buyers+Math.sign(targetUsers-metrics.buyers||1)*rand(1,5),60,200);
+      metrics.lastBuyer=now;
+    }
+
+    metrics.logs+=rand(0,3);
+    var targetLoad=Math.random()<0.03?rand(70,100):rand(20,50);
+    metrics.load=clamp(metrics.load+Math.sign(targetLoad-metrics.load||1)*rand(0,3),1,100);
+    metrics.online=clamp(Math.round(metrics.buyers*0.72+rand(-4,4)),40,165);
+    metrics.points.push(metrics.load);
+    if(metrics.points.length>90) metrics.points.shift();
+
+    store.set(METRICS_KEY,JSON.stringify(metrics));
+    renderMetrics();
+  }
+
+  function drawChart(){
+    var c=$('chart');
+    if(!c) return;
+    var rect=c.getBoundingClientRect();
+    if(!rect.width) return;
+
+    var dpr=Math.max(1,window.devicePixelRatio||1);
+    c.width=Math.floor(rect.width*dpr);
+    c.height=Math.floor(rect.height*dpr);
+
+    var ctx=c.getContext('2d');
+    ctx.scale(dpr,dpr);
+
+    var w=rect.width,h=rect.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle='#242a34';
+    ctx.lineWidth=1;
+
+    for(var i=1;i<4;i++){
+      var y=h*i/4;
+      ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+    }
+
+    var xs=w/(metrics.points.length-1);
+    function gy(p){return h-(p/100)*(h-8)-4;}
+
+    ctx.beginPath();
+    for(var j=0;j<metrics.points.length;j++){
+      if(j===0) ctx.moveTo(0,gy(metrics.points[j]));
+      else ctx.lineTo(j*xs,gy(metrics.points[j]));
+    }
+    ctx.strokeStyle='#e11d2e';
+    ctx.lineWidth=2.3;
+    ctx.stroke();
+  }
+
+  function bind(){
+    $('loginTab').onclick=function(){switchAuth('login');};
+    $('registerTab').onclick=function(){switchAuth('register');};
+    $('loginBtn').onclick=login;
+    $('registerBtn').onclick=register;
+
+    $('loginPassword').onkeydown=function(e){if(e.key==='Enter') login();};
+    $('regPassword').onkeydown=function(e){if(e.key==='Enter') register();};
+
+    $('menuBtn').onclick=function(){$('sidebar').classList.toggle('collapsed');};
+
+    var navs=document.querySelectorAll('.nav');
+    for(var i=0;i<navs.length;i++){
+      navs[i].onclick=function(){showPage(this.getAttribute('data-page'));};
+    }
+
+    $('settingsBtn').onclick=function(){$('settings').classList.toggle('hidden');};
+    $('logoutBtn').onclick=logout;
+    $('modalClose').onclick=closeDeviceModal;
+    $('deviceModalShade').onclick=function(e){if(e.target===$('deviceModalShade')) closeDeviceModal();};
+    $('manageModalClose').onclick=closeManageModal;
+    $('manageModalShade').onclick=function(e){if(e.target===$('manageModalShade')) closeManageModal();};
+
+    $('saveProfile').onclick=function(){
+      var name=$('displayNameInput').value.trim();
+      if(!name) return;
+      me.displayName=name;
+      for(var i=0;i<users.length;i++){
+        if(Number(users[i].id)===Number(me.id)){users[i].displayName=name;break;}
+      }
+      saveUsers();
+      $('topNick').textContent=name;
+      var m=$('settingsMsg');m.textContent='Сохранено';m.classList.remove('hidden');
+      setTimeout(function(){m.classList.add('hidden');},1200);
+    };
+
+    $('langBtn').onclick=function(){
+      lang=lang==='ru'?'en':'ru';
+      store.set(LANG_KEY,lang);
+      $('langBtn').textContent='🌐 '+lang.toUpperCase();
+      applyLanguage();
+    };
+
+    var buildButtons=document.querySelectorAll('[data-build]');
+    for(var b=0;b<buildButtons.length;b++){
+      buildButtons[b].onclick=function(){
+        var m=$('buildMsg');
+        m.textContent=me.subscriptionActive?'Функция сборки не подключена в HTML-версии.':'У вас не активна подписка';
+        m.classList.remove('hidden');
+      };
+    }
+
+    document.addEventListener('click',function(e){
+      if(!$('settings').classList.contains('hidden') && !$('settings').contains(e.target) && !$('settingsBtn').contains(e.target)){
+        $('settings').classList.add('hidden');
+      }
+    });
+
+    window.addEventListener('resize',drawChart);
+  }
+
+  function init(){
+    try{
+      bind();
+      loadUsers();
+      loadDevices();
+      var sid=store.get(SESSION_KEY);
+      if(sid){
+        var id=Number(sid);
+        for(var i=0;i<users.length;i++){
+          if(Number(users[i].id)===id){me=users[i];break;}
+        }
+      }
+      if(me) openApp();
+      setInterval(updateMetrics,5000);
+      setInterval(updateDevicePings,3000);
+    }catch(e){
+      console.error(e);
+      showAuthMessage('Ошибка запуска интерфейса: '+(e.message||'неизвестная ошибка'));
+    }
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init);
+  else init();
+})();
+</script>
+
+<div class="modalShade hidden" id="deviceModalShade">
+  <div class="deviceModal" id="deviceModal">
+    <div class="modalHead">
+      <div class="deviceIcon" id="modalDeviceIcon"><div class="deviceGlyph pc" id="modalDeviceGlyph"></div></div>
+      <div><h2 id="modalDeviceName">Device</h2><div class="sub" id="modalDeviceType">PC</div></div>
+      <button class="modalClose" id="modalClose">×</button>
+    </div>
+    <div class="modalBody">
+      <div class="detailGrid">
+        <div class="detail"><div class="detailLabel">Страна</div><div class="detailValue" id="modalCountry"></div></div>
+        <div class="detail"><div class="detailLabel">IP</div><div class="detailValue ip" id="modalIp"></div></div>
+        <div class="detail"><div class="detailLabel">Ping</div><div class="detailValue" id="modalPing"></div></div>
+        <div class="detail"><div class="detailLabel">Система</div><div class="detailValue" id="modalOs"></div></div>
+        <div class="detail"><div class="detailLabel">Статус</div><div class="detailValue" id="modalStatus">● ONLINE</div></div>
+      </div>
+      <div class="safeNote">Адрес устройства является тестовым и не указывает на реального человека или реальное устройство.</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modalShade hidden" id="manageModalShade">
+  <div class="manageModal">
+    <div class="modalHead">
+      <div class="deviceIcon"><div class="deviceGlyph pc" id="manageDeviceGlyph"></div></div>
+      <div>
+        <h2 id="manageDeviceName">Управление устройством</h2>
+        <div class="sub" id="manageDeviceType">PC</div>
+      </div>
+      <button class="modalClose" id="manageModalClose">×</button>
+    </div>
+    <div class="commandGrid" id="manageCommandGrid"></div>
+    <div class="manageNotice" id="manageNotice">
+      HTML-версия: эти элементы являются интерфейсными заглушками и не выполняют удалённые команды.
+    </div>
+  </div>
+</div>
+
+
+</body></html>
